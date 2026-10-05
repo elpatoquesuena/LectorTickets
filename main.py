@@ -528,7 +528,7 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    # --- SELECTOR DE ARCHIVOS NATIVO SEGURO ---
+    # --- SELECTOR DE ARCHIVOS NATIVO (CORRECTO PARA ANDROID) ---
     def on_file_picked(e: ft.FilePickerResultEvent):
         if e.files:
             archivo = e.files[0]
@@ -547,7 +547,7 @@ def main(page: ft.Page):
             filas_tabla = []
             for p in datos["productos"]:
                 desc_texto = f"-{formatear_moneda(p['descuento'])}" if p['descuento'] > 0 else "$ 0,00"
-                desc_color = ft.Colors.RED_600 if p['descuento'] > 0 else ft.Colors.GREY
+                desc_col = ft.Colors.RED_600 if p['descuento'] > 0 else ft.Colors.GREY
 
                 filas_tabla.append(
                     ft.DataRow(
@@ -555,7 +555,7 @@ def main(page: ft.Page):
                             ft.DataCell(ft.Text(p["nombre"], weight=ft.FontWeight.BOLD)),
                             ft.DataCell(ft.Text(formatear_moneda(p['precio_bruto']))),
                             ft.DataCell(ft.Text(formatear_cantidad(p['cantidad']))),
-                            ft.DataCell(ft.Text(desc_texto, color=desc_color)),
+                            ft.DataCell(ft.Text(desc_texto, color=desc_col)),
                             ft.DataCell(ft.Text(formatear_moneda(p['precio_neto']), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700)),
                         ]
                     )
@@ -616,13 +616,13 @@ def main(page: ft.Page):
             page.update()
 
     file_picker = ft.FilePicker(on_result=on_file_picked)
+    # Se agrega nativamente a la página sin romper la inicialización móvil
     page.overlay.append(file_picker)
-    page.update()
 
     btn_cargar_imagen = ft.Button(
         "Buscar e ingresar ticket",
         icon=ft.Icons.ADD_A_PHOTO,
-        on_click=lambda _: file_picker.pick_files(allow_multiple=False)
+        on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
     )
 
     seccion_carrusel_inicio = ft.Card(
