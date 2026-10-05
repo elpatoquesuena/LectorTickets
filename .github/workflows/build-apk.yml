@@ -16,10 +16,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias
+      - name: Limpiar caché y actualizar pip
         run: |
           python -m pip install --upgrade pip
-          pip install flet
+          pip install --upgrade flet
 
       - name: Configurar Java (Android SDK)
         uses: actions/setup-java@v4
@@ -27,7 +27,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Compilar APK con Flet
+      - name: Compilar APK con Flet (Fresh Build)
         run: flet build apk --yes .
 
       - name: Subir APK como artefacto
