@@ -1,6 +1,7 @@
 import sqlite3
 import unicodedata
 from datetime import datetime
+import tkinte # Para asegurar que funcione en PC si se desea, o manejado de forma segura
 import flet as ft
 
 # --- 1. FUNCIONES DE NORMALIZACIÓN Y FORMATO ---
@@ -59,7 +60,6 @@ def init_db():
         )
     """)
     
-    # Migración de esquema
     cursor.execute("PRAGMA table_info(productos)")
     columnas_existentes = [col[1] for col in cursor.fetchall()]
     
@@ -78,7 +78,6 @@ def init_db():
             except sqlite3.OperationalError:
                 pass
 
-    # Limpieza de duplicados acumulados previamente
     cursor.execute("""
         DELETE FROM compras 
         WHERE id NOT IN (
@@ -98,16 +97,13 @@ def init_db():
 def existe_ticket_duplicado(comercio, fecha_hora, total):
     conn = obtener_conexion()
     cursor = conn.cursor()
-    
     solo_fecha = formatear_solo_fecha(fecha_hora)
-    
     cursor.execute("""
         SELECT id FROM compras 
         WHERE LOWER(TRIM(comercio)) = LOWER(TRIM(?)) 
           AND (fecha = ? OR DATE(fecha) = DATE(?)) 
           AND ROUND(total, 2) = ROUND(?, 2)
     """, (comercio, fecha_hora, solo_fecha, total))
-    
     resultado = cursor.fetchone()
     conn.close()
     return resultado is not None
@@ -177,20 +173,17 @@ def obtener_comercios_registrados():
 def obtener_tabla_historial_completo(filtro_comercio=None):
     conn = obtener_conexion()
     cursor = conn.cursor()
-    
     query = """
         SELECT c.fecha, c.comercio, p.nombre, p.precio_bruto, p.cantidad, p.descuento, p.precio_neto
         FROM productos p
         JOIN compras c ON p.compra_id = c.id
     """
-    
     if filtro_comercio and filtro_comercio != "Todos":
         query += " WHERE c.comercio = ? ORDER BY c.fecha DESC, p.id ASC"
         cursor.execute(query, (filtro_comercio,))
     else:
         query += " ORDER BY c.fecha DESC, p.id ASC"
         cursor.execute(query)
-        
     filas = cursor.fetchall()
     conn.close()
     return filas
@@ -242,13 +235,11 @@ def main(page: ft.Page):
 
     ticket_pendiente = {"datos": None}
 
-    # Contenedores UI
     texto_archivo = ft.Text("Ninguna imagen seleccionada", color=ft.Colors.GREY)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
 
-    # --- DIÁLOGO POPUP PARA VER HISTORIAL INDIVIDUAL DE UN PRODUCTO ---
     def abrir_historial_producto_modal(nombre_producto):
         registros = obtener_historial_producto(nombre_producto)
         
@@ -299,7 +290,6 @@ def main(page: ft.Page):
         dialogo.open = True
         page.update()
 
-    # BUSCADOR DE PRODUCTOS
     input_busqueda_prod = ft.TextField(
         label="Buscar producto (Ej: cafe, leche, galletitas...)",
         prefix_icon=ft.Icons.SEARCH,
@@ -368,7 +358,6 @@ def main(page: ft.Page):
         card_resultado
     ], visible=True)
 
-    # SECCIÓN HISTORIAL COMPLETO
     dropdown_comercios = ft.Dropdown(
         label="Filtrar por comercio",
         width=300
@@ -540,10 +529,7 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    # --- SELECTOR DE ARCHIVOS NATIVO (COMPATIBLE CON ANDROID Y PC) ---
-    file_picker = ft.FilePicker()
-    page.overlay.append(file_picker)
-
+    # --- SELECTOR DE ARCHIVOS NATIVO SEGURO ---
     def on_file_picked(e: ft.FilePickerResultEvent):
         if e.files:
             archivo = e.files[0]
@@ -619,7 +605,7 @@ def main(page: ft.Page):
                         ft.Row([tabla_productos], scroll=ft.ScrollMode.AUTO),
                         mensaje_alerta,
                         ft.Divider(),
-                        ft.Row([btn_guard_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=10)
+                        ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=10)
                     ]),
                     border=ft.Border.all(1, ft.Colors.BLUE_200),
                     bgcolor=ft.Colors.BLUE_50,
@@ -630,12 +616,14 @@ def main(page: ft.Page):
 
             page.update()
 
-    file_picker.on_result = on_file_picked
+    file_picker = ft.FilePicker(on_result=on_file_picked)
+    page.overlay.append(file_picker)
+    page.update()
 
     btn_cargar_imagen = ft.Button(
         "Buscar e ingresar ticket",
         icon=ft.Icons.ADD_A_PHOTO,
-        on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
+        on_click=lambda _: file_picker.pick_files(allow_multiple=False)
     )
 
     seccion_carrusel_inicio = ft.Card(
@@ -650,7 +638,6 @@ def main(page: ft.Page):
         )
     )
 
-    # --- 5. ESTRUCTURA DE LA PÁGINA ---
     page.add(
         ft.Text("Digitalizador de Tickets", size=22, weight=ft.FontWeight.BOLD),
         seccion_carrusel_inicio,
