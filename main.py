@@ -185,10 +185,10 @@ def obtener_tabla_historial_completo(filtro_comercio=None):
     conn.close()
     return filas
 
-def simular_captura_ticket():
+def procesar_imagen_capturada(nombre_archivo):
     fecha_ticket = datetime.now().strftime("%Y-%m-%d %H:%M")
     return {
-        "comercio": "Supermercado Disco",
+        "comercio": f"Comercio detectado ({nombre_archivo[:10]})",
         "fecha": fecha_ticket,
         "total": 14250.00,
         "productos": [
@@ -210,7 +210,7 @@ def main(page: ft.Page):
 
     ticket_pendiente = {"datos": None}
 
-    texto_estado = ft.Text("Toca el botón para capturar el ticket", color=ft.Colors.GREY, size=12)
+    texto_estado = ft.Text("Toca el botón para tomar la foto del ticket", color=ft.Colors.GREY, size=12)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
@@ -440,7 +440,7 @@ def main(page: ft.Page):
 
     def limpiar_vista_previa():
         ticket_pendiente["datos"] = None
-        texto_estado.value = "Toca el botón para capturar el ticket"
+        texto_estado.value = "Toca el botón para tomar la foto del ticket"
         texto_estado.color = ft.Colors.GREY
         contenedor_resumen.controls.clear()
         mensaje_alerta.controls.clear()
@@ -484,88 +484,97 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def ejecutar_captura(e):
-        datos = simular_captura_ticket()
-        ticket_pendiente["datos"] = datos
-        texto_estado.value = f"Ticket procesado: {datos['comercio']}"
-        texto_estado.color = ft.Colors.GREEN_700
-        mensaje_alerta.controls.clear()
+    # --- SEECTOR MULTIMEDIA NATIVO PARA CÁMARA ---
+    def on_picker_result(e: ft.FilePickerResultEvent):
+        if e.files:
+            archivo = e.files[0]
+            nombre_archivo = archivo.name
+            texto_estado.value = f"Foto capturada: {nombre_archivo}"
+            texto_estado.color = ft.Colors.GREEN_700
+            mensaje_alerta.controls.clear()
 
-        seccion_buscador.visible = False
-        seccion_historial_inicio.visible = False
-        seccion_historial_panel.visible = False
+            seccion_buscador.visible = False
+            seccion_historial_inicio.visible = False
+            seccion_historial_panel.visible = False
 
-        filas_tabla = []
-        for p in datos["productos"]:
-            desc_texto = f"-{formatear_moneda(p['descuento'])}" if p['descuento'] > 0 else "$ 0,00"
-            desc_col = ft.Colors.RED_600 if p['descuento'] > 0 else ft.Colors.GREY
+            datos = procesar_imagen_capturada(nombre_archivo)
+            ticket_pendiente["datos"] = datos
 
-            filas_tabla.append(
-                ft.DataRow(
-                    cells=[
-                        ft.DataCell(ft.Text(p["nombre"], weight=ft.FontWeight.BOLD, size=11)),
-                        ft.DataCell(ft.Text(formatear_moneda(p['precio_bruto']), size=11)),
-                        ft.DataCell(ft.Text(formatear_cantidad(p['cantidad']), size=11)),
-                        ft.DataCell(ft.Text(desc_texto, color=desc_col, size=11)),
-                        ft.DataCell(ft.Text(formatear_moneda(p['precio_neto']), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=11)),
-                    ]
+            filas_tabla = []
+            for p in datos["productos"]:
+                desc_texto = f"-{formatear_moneda(p['descuento'])}" if p['descuento'] > 0 else "$ 0,00"
+                desc_col = ft.Colors.RED_600 if p['descuento'] > 0 else ft.Colors.GREY
+
+                filas_tabla.append(
+                    ft.DataRow(
+                        cells=[
+                            ft.DataCell(ft.Text(p["nombre"], weight=ft.FontWeight.BOLD, size=11)),
+                            ft.DataCell(ft.Text(formatear_moneda(p['precio_bruto']), size=11)),
+                            ft.DataCell(ft.Text(formatear_cantidad(p['cantidad']), size=11)),
+                            ft.DataCell(ft.Text(desc_texto, color=desc_col, size=11)),
+                            ft.DataCell(ft.Text(formatear_moneda(p['precio_neto']), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=11)),
+                        ]
+                    )
+                )
+
+            tabla_productos = ft.DataTable(
+                columns=[
+                    ft.DataColumn(ft.Text("Producto", size=11)),
+                    ft.DataColumn(ft.Text("P. Bruto", size=11)),
+                    ft.DataColumn(ft.Text("Cant.", size=11)),
+                    ft.DataColumn(ft.Text("Descuento", size=11)),
+                    ft.DataColumn(ft.Text("P. Neto", size=11)),
+                ],
+                rows=filas_tabla,
+            )
+
+            btn_guardar_bd = ft.Button("Guardar", icon=ft.Icons.SAVE, on_click=confirmar_guardado)
+            btn_cancelar_bd = ft.Button("Cancelar", icon=ft.Icons.CANCEL, on_click=cancelar_registro)
+
+            contenedor_resumen.controls.clear()
+            contenedor_resumen.controls.append(
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.RECEIPT_LONG, color=ft.Colors.BLUE_700, size=22),
+                            ft.Text("Vista Previa del Ticket", size=15, weight=ft.FontWeight.BOLD)
+                        ]),
+                        ft.Divider(),
+                        ft.Row([
+                            ft.Text(f"Comercio: {datos['comercio']}", weight=ft.FontWeight.BOLD, size=12),
+                            ft.Text(f"Fecha: {formatear_solo_fecha(datos['fecha'])}", color=ft.Colors.GREY_700, size=11),
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Text(f"Total: {formatear_moneda(datos['total'])}", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
+                        ft.Divider(),
+                        ft.Text("Detalle:", weight=ft.FontWeight.BOLD, size=12),
+                        ft.Row([tabla_productos], scroll=ft.ScrollMode.AUTO),
+                        mensaje_alerta,
+                        ft.Divider(),
+                        ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=5)
+                    ]),
+                    border=ft.Border.all(1, ft.Colors.BLUE_200),
+                    bgcolor=ft.Colors.BLUE_50,
+                    border_radius=8,
+                    padding=8
                 )
             )
+            page.update()
 
-        tabla_productos = ft.DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("Producto", size=11)),
-                ft.DataColumn(ft.Text("P. Bruto", size=11)),
-                ft.DataColumn(ft.Text("Cant.", size=11)),
-                ft.DataColumn(ft.Text("Descuento", size=11)),
-                ft.DataColumn(ft.Text("P. Neto", size=11)),
-            ],
-            rows=filas_tabla,
-        )
+    # Añadimos el selector multimedia estándar y seguro de Flet
+    file_picker = ft.FilePicker(on_result=on_picker_result)
+    page.overlay.append(file_picker)
 
-        btn_guardar_bd = ft.Button("Guardar", icon=ft.Icons.SAVE, on_click=confirmar_guardado)
-        btn_cancelar_bd = ft.Button("Cancelar", icon=ft.Icons.CANCEL, on_click=cancelar_registro)
-
-        contenedor_resumen.controls.clear()
-        contenedor_resumen.controls.append(
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Icon(ft.Icons.RECEIPT_LONG, color=ft.Colors.BLUE_700, size=22),
-                        ft.Text("Vista Previa del Ticket", size=15, weight=ft.FontWeight.BOLD)
-                    ]),
-                    ft.Divider(),
-                    ft.Row([
-                        ft.Text(f"Comercio: {datos['comercio']}", weight=ft.FontWeight.BOLD, size=12),
-                        ft.Text(f"Fecha: {formatear_solo_fecha(datos['fecha'])}", color=ft.Colors.GREY_700, size=11),
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Text(f"Total: {formatear_moneda(datos['total'])}", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
-                    ft.Divider(),
-                    ft.Text("Detalle:", weight=ft.FontWeight.BOLD, size=12),
-                    ft.Row([tabla_productos], scroll=ft.ScrollMode.AUTO),
-                    mensaje_alerta,
-                    ft.Divider(),
-                    ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=5)
-                ]),
-                border=ft.Border.all(1, ft.Colors.BLUE_200),
-                bgcolor=ft.Colors.BLUE_50,
-                border_radius=8,
-                padding=8
-            )
-        )
-        page.update()
-
-    btn_capturar = ft.Button(
-        "Capturar foto del ticket",
+    btn_abrir_camara = ft.Button(
+        "Tomar foto del ticket",
         icon=ft.Icons.CAMERA_ALT,
-        on_click=ejecutar_captura
+        on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
     )
 
     seccion_carrusel_inicio = ft.Card(
         content=ft.Container(
             content=ft.Column([
                 ft.Text("1. Escanear / Cargar Ticket", size=15, weight=ft.FontWeight.BOLD),
-                btn_capturar,
+                btn_abrir_camara,
                 texto_estado,
                 contenedor_resumen
             ]),
