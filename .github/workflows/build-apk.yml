@@ -28,7 +28,7 @@ jobs:
           java-version: '17'
 
       - name: Compilar APK con Flet
-        run: flet build apk .
+        run: flet build apk --yes .
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
