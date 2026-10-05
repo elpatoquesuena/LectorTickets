@@ -5,7 +5,6 @@ import flet as ft
 
 # --- 1. FUNCIONES DE NORMALIZACIÓN Y FORMATO ---
 def quitar_acentos(texto):
-    """Elimina tildes, diéresis y acentos para búsquedas insensibles."""
     if not texto:
         return ""
     texto = unicodedata.normalize('NFD', str(texto))
@@ -22,7 +21,6 @@ def formatear_cantidad(valor):
     return f"{int(valor):,}".replace(",", ".")
 
 def formatear_solo_fecha(cadena_fecha):
-    """Extrae únicamente la fecha (YYYY-MM-DD) omitiendo la hora."""
     if not cadena_fecha:
         return ""
     return cadena_fecha.split(" ")[0]
@@ -187,61 +185,39 @@ def obtener_tabla_historial_completo(filtro_comercio=None):
     conn.close()
     return filas
 
-# --- 3. PROCESAMIENTO DE TICKET (OCR SIMULADO) ---
-def simular_procesamiento_ocr(nombre_archivo):
+def procesar_foto_ticket(nombre_archivo):
     fecha_ticket = datetime.now().strftime("%Y-%m-%d %H:%M")
     datos_ticket = {
-        "comercio": "Supermercado Disco",
+        "comercio": "Supermercado Escaneado",
         "fecha": fecha_ticket,
         "total": 14250.00,
         "productos": [
-            {
-                "codigo_barras": "7790001001234",
-                "nombre": "Leche Entera 1L",
-                "precio_bruto": 1200.00,
-                "cantidad": 2,
-                "descuento": 200.00,
-                "precio_neto": 1000.00
-            },
-            {
-                "codigo_barras": "7791234567890",
-                "nombre": "Café Molido 250g",
-                "precio_bruto": 4500.00,
-                "cantidad": 1,
-                "descuento": 500.00,
-                "precio_neto": 4000.00
-            },
-            {
-                "codigo_barras": "7799876543210",
-                "nombre": "Galletitas Dulces",
-                "precio_bruto": 1850.00,
-                "cantidad": 3,
-                "descuento": 300.00,
-                "precio_neto": 1550.00
-            }
+            {"codigo_barras": "7790001001234", "nombre": "Leche Entera 1L", "precio_bruto": 1200.00, "cantidad": 2, "descuento": 200.00, "precio_neto": 1000.00},
+            {"codigo_barras": "7791234567890", "nombre": "Café Molido 250g", "precio_bruto": 4500.00, "cantidad": 1, "descuento": 500.00, "precio_neto": 4000.00},
+            {"codigo_barras": "7799876543210", "nombre": "Galletitas Dulces", "precio_bruto": 1850.00, "cantidad": 3, "descuento": 300.00, "precio_neto": 1550.00}
         ]
     }
     return datos_ticket
 
-# --- 4. INTERFAZ GRÁFICA OPTIMIZADA PARA MÓVIL ---
+# --- 3. INTERFAZ GRÁFICA MÓVIL CON CÁMARA ---
 def main(page: ft.Page):
     page.title = "Control de Tickets"
     page.theme_mode = ft.ThemeMode.LIGHT
-    page.padding = 10
+    page.padding = 12
+    page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
     page.scroll = ft.ScrollMode.AUTO
 
     init_db()
 
     ticket_pendiente = {"datos": None}
 
-    texto_archivo = ft.Text("Ninguna imagen seleccionada", color=ft.Colors.GREY, size=12)
+    texto_estado = ft.Text("Toca el botón para tomar una foto del ticket", color=ft.Colors.GREY, size=12)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
 
     def abrir_historial_producto_modal(nombre_producto):
         registros = obtener_historial_producto(nombre_producto)
-        
         filas_modal = []
         for reg in registros:
             fecha_str, comercio, p_bruto, cant, desc, p_neto = reg
@@ -279,8 +255,8 @@ def main(page: ft.Page):
             title=ft.Text(f"Historial: {nombre_producto}", weight=ft.FontWeight.BOLD, size=14),
             content=ft.Container(
                 content=ft.Row([tabla_modal], scroll=ft.ScrollMode.AUTO),
-                width=300,
-                height=250
+                width=320,
+                height=260
             ),
             actions=[ft.TextButton("Cerrar", on_click=cerrar_dialogo)]
         )
@@ -289,12 +265,12 @@ def main(page: ft.Page):
         dialogo.open = True
         page.update()
 
-    # BUSCADOR CON ANCHO SEGURO
+    # BUSCADOR ADAPTATIVO
     input_busqueda_prod = ft.TextField(
-        label="Buscar producto (ej: cafe, leche...)",
+        label="Buscar producto...",
         prefix_icon=ft.Icons.SEARCH,
-        width=230,
-        height=50,
+        expand=True,
+        height=45,
         text_size=13
     )
 
@@ -322,11 +298,7 @@ def main(page: ft.Page):
                         ft.ListTile(
                             leading=ft.Icon(ft.Icons.SHOPPING_BAG, color=ft.Colors.GREEN_600, size=24),
                             title=ft.Text(f"{nombre}", weight=ft.FontWeight.BOLD, size=14),
-                            subtitle=ft.Text(
-                                f"Lugar: {comercio} | Fecha: {formatear_solo_fecha(fecha)}\n"
-                                f"Bruto: {formatear_moneda(p_bruto_val)} | Desc: -{formatear_moneda(desc_val)}",
-                                size=11
-                            ),
+                            subtitle=ft.Text(f"Lugar: {comercio} | Fecha: {formatear_solo_fecha(fecha)}", size=11),
                             trailing=ft.Text(formatear_moneda(p_neto_val), weight=ft.FontWeight.BOLD, size=13, color=ft.Colors.GREEN_700),
                             on_click=lambda _, n=nombre: abrir_historial_producto_modal(n)
                         )
@@ -334,14 +306,14 @@ def main(page: ft.Page):
                     border=ft.Border.all(1, ft.Colors.GREEN_300),
                     bgcolor=ft.Colors.GREEN_50,
                     border_radius=8,
-                    padding=5
+                    padding=4
                 )
             )
         else:
             card_resultado.controls.append(
                 ft.Container(
                     content=ft.Text("No se encontró ningún producto.", color=ft.Colors.RED_600, italic=True, size=12),
-                    padding=5
+                    padding=4
                 )
             )
         page.update()
@@ -357,21 +329,19 @@ def main(page: ft.Page):
     seccion_buscador = ft.Column([
         ft.Divider(height=10),
         ft.Text("2. Consultar Último Precio", size=15, weight=ft.FontWeight.BOLD),
-        ft.Row([input_busqueda_prod, btn_buscar], alignment=ft.MainAxisAlignment.START, spacing=5),
+        ft.Row([input_busqueda_prod, btn_buscar], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         card_resultado
-    ], visible=True)
+    ])
 
-    # SECCIÓN HISTORIAL COMPLETO
     dropdown_comercios = ft.Dropdown(
         label="Filtrar por comercio",
-        width=250,
+        expand=True,
         text_size=13
     )
 
     def cargar_vista_historial(e=None):
         comercio_sel = dropdown_comercios.value
         registros = obtener_tabla_historial_completo(comercio_sel)
-        
         contenedor_historial.controls.clear()
         
         if not registros:
@@ -423,11 +393,7 @@ def main(page: ft.Page):
                 ],
                 rows=filas_tabla,
             )
-
-            contenedor_historial.controls.append(
-                ft.Row([tabla_historial], scroll=ft.ScrollMode.AUTO)
-            )
-
+            contenedor_historial.controls.append(ft.Row([tabla_historial], scroll=ft.ScrollMode.AUTO))
         page.update()
 
     dropdown_comercios.on_change = cargar_vista_historial
@@ -453,7 +419,6 @@ def main(page: ft.Page):
         comercios = obtener_comercios_registrados()
         dropdown_comercios.options = [ft.dropdown.Option("Todos")] + [ft.dropdown.Option(c) for c in comercios]
         dropdown_comercios.value = "Todos"
-        
         limpiar_vista_previa()
         seccion_carrusel_inicio.visible = True
         seccion_buscador.visible = False
@@ -471,15 +436,14 @@ def main(page: ft.Page):
         ft.Divider(height=10),
         ft.Text("3. Historial de Compras", size=15, weight=ft.FontWeight.BOLD),
         btn_ver_historial
-    ], visible=True)
+    ])
 
     def limpiar_vista_previa():
         ticket_pendiente["datos"] = None
-        texto_archivo.value = "Ninguna imagen seleccionada"
-        texto_archivo.color = ft.Colors.GREY
+        texto_estado.value = "Toca el botón para tomar una foto del ticket"
+        texto_estado.color = ft.Colors.GREY
         contenedor_resumen.controls.clear()
         mensaje_alerta.controls.clear()
-        
         seccion_carrusel_inicio.visible = True
         seccion_buscador.visible = True
         seccion_historial_inicio.visible = True
@@ -503,12 +467,7 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Row([
                         ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_700, size=20),
-                        ft.Text(
-                            "¡Atención! Este ticket ya está registrado.",
-                            color=ft.Colors.RED_800,
-                            weight=ft.FontWeight.BOLD,
-                            size=11
-                        )
+                        ft.Text("¡Atención! Este ticket ya está registrado.", color=ft.Colors.RED_800, weight=ft.FontWeight.BOLD, size=11)
                     ]),
                     bgcolor=ft.Colors.RED_100,
                     border=ft.Border.all(1, ft.Colors.RED_400),
@@ -519,36 +478,26 @@ def main(page: ft.Page):
             page.update()
             return
 
-        guardar_ticket_completo(
-            datos["comercio"],
-            datos["fecha"],
-            datos["total"],
-            datos["productos"]
-        )
-
+        guardar_ticket_completo(datos["comercio"], datos["fecha"], datos["total"], datos["productos"])
         limpiar_vista_previa()
-
-        page.snack_bar = ft.SnackBar(
-            content=ft.Text("¡Ticket registrado correctamente!", weight=ft.FontWeight.BOLD),
-            bgcolor=ft.Colors.GREEN_700
-        )
+        page.snack_bar = ft.SnackBar(content=ft.Text("¡Ticket registrado correctamente!", weight=ft.FontWeight.BOLD), bgcolor=ft.Colors.GREEN_700)
         page.snack_bar.open = True
         page.update()
 
-    # --- SELECTOR NATIVO DE GALERÍA (FILEPICKER) ---
-    def on_file_picked(e: ft.FilePickerResultEvent):
+    # --- CONFIGURACIÓN DE CÁMARA NATIVA ---
+    def on_camera_result(e: ft.FilePickerResultEvent):
         if e.files:
             archivo = e.files[0]
             nombre_archivo = archivo.name
-            texto_archivo.value = f"Imagen: {nombre_archivo}"
-            texto_archivo.color = ft.Colors.GREEN_700
+            texto_estado.value = f"Foto capturada: {nombre_archivo}"
+            texto_estado.color = ft.Colors.GREEN_700
             mensaje_alerta.controls.clear()
 
             seccion_buscador.visible = False
             seccion_historial_inicio.visible = False
             seccion_historial_panel.visible = False
 
-            datos = simular_procesamiento_ocr(nombre_archivo)
+            datos = procesar_foto_ticket(nombre_archivo)
             ticket_pendiente["datos"] = datos
 
             filas_tabla = []
@@ -579,16 +528,8 @@ def main(page: ft.Page):
                 rows=filas_tabla,
             )
 
-            btn_guardar_bd = ft.Button(
-                "Guardar",
-                icon=ft.Icons.SAVE,
-                on_click=confirmar_guardado
-            )
-            btn_cancelar_bd = ft.Button(
-                "Cancelar",
-                icon=ft.Icons.CANCEL,
-                on_click=cancelar_registro
-            )
+            btn_guardar_bd = ft.Button("Guardar", icon=ft.Icons.SAVE, on_click=confirmar_guardado)
+            btn_cancelar_bd = ft.Button("Cancelar", icon=ft.Icons.CANCEL, on_click=cancelar_registro)
 
             contenedor_resumen.controls.clear()
             contenedor_resumen.controls.append(
@@ -617,24 +558,24 @@ def main(page: ft.Page):
                     padding=8
                 )
             )
-
             page.update()
 
-    file_picker = ft.FilePicker(on_result=on_file_picked)
-    page.overlay.append(file_picker)
+    # Usamos el FilePicker configurado exclusivamente para abrir la cámara nativa del celular
+    camera_picker = ft.FilePicker(on_result=on_camera_result)
+    page.overlay.append(camera_picker)
 
-    btn_cargar_imagen = ft.Button(
-        "Seleccionar ticket de la galería",
-        icon=ft.Icons.PHOTO_LIBRARY,
-        on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
+    btn_abrir_camara = ft.Button(
+        "Tomar foto del ticket",
+        icon=ft.Icons.CAMERA_ALT,
+        on_click=lambda _: camera_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
     )
 
     seccion_carrusel_inicio = ft.Card(
         content=ft.Container(
             content=ft.Column([
                 ft.Text("1. Escanear / Cargar Ticket", size=15, weight=ft.FontWeight.BOLD),
-                btn_cargar_imagen,
-                texto_archivo,
+                btn_abrir_camara,
+                texto_estado,
                 contenedor_resumen
             ]),
             padding=10
