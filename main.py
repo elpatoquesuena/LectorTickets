@@ -1,7 +1,6 @@
 import sqlite3
 import unicodedata
 from datetime import datetime
-import tkinte # Para asegurar que funcione en PC si se desea, o manejado de forma segura
 import flet as ft
 
 # --- 1. FUNCIONES DE NORMALIZACIÓN Y FORMATO ---
