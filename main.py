@@ -210,10 +210,15 @@ def main(page: ft.Page):
 
     ticket_pendiente = {"datos": None}
 
-    texto_estado = ft.Text("Toca el botón para procesar tu ticket", color=ft.Colors.GREY, size=12)
+    texto_estado = ft.Text("Toca el botón para capturar el ticket", color=ft.Colors.GREY, size=12)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
+
+    def cerrar_dialogo(e):
+        if page.dialog:
+            page.dialog.open = False
+            page.update()
 
     def abrir_historial_producto_modal(nombre_producto):
         registros = obtener_historial_producto(nombre_producto)
@@ -246,10 +251,6 @@ def main(page: ft.Page):
             rows=filas_modal
         )
 
-        def cerrar_dialogo(e):
-            dialogo.open = False
-            page.update()
-
         dialogo = ft.AlertDialog(
             title=ft.Text(f"Historial: {nombre_producto}", weight=ft.FontWeight.BOLD, size=14),
             content=ft.Container(
@@ -260,7 +261,7 @@ def main(page: ft.Page):
             actions=[ft.TextButton("Cerrar", on_click=cerrar_dialogo)]
         )
 
-        page.overlay.append(dialogo)
+        page.dialog = dialogo
         dialogo.open = True
         page.update()
 
@@ -439,7 +440,7 @@ def main(page: ft.Page):
 
     def limpiar_vista_previa():
         ticket_pendiente["datos"] = None
-        texto_estado.value = "Toca el botón para procesar tu ticket"
+        texto_estado.value = "Toca el botón para capturar el ticket"
         texto_estado.color = ft.Colors.GREY
         contenedor_resumen.controls.clear()
         mensaje_alerta.controls.clear()
@@ -555,7 +556,7 @@ def main(page: ft.Page):
         page.update()
 
     btn_capturar = ft.Button(
-        "Capturar ticket",
+        "Capturar foto del ticket",
         icon=ft.Icons.CAMERA_ALT,
         on_click=ejecutar_captura
     )
