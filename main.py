@@ -2,7 +2,6 @@ import sqlite3
 import unicodedata
 from datetime import datetime
 import flet as ft
-from tkinter import Tk, filedialog
 
 # --- 1. FUNCIONES DE NORMALIZACIÓN Y FORMATO ---
 def quitar_acentos(texto):
@@ -541,22 +540,14 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def abrir_explorador_archivos(e):
-        root = Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
+    # --- SELECTOR DE ARCHIVOS NATIVO (COMPATIBLE CON ANDROID Y PC) ---
+    file_picker = ft.FilePicker()
+    page.overlay.append(file_picker)
 
-        ruta_imagen = filedialog.askopenfilename(
-            title="Seleccionar foto del ticket",
-            filetypes=[
-                ("Imágenes", "*.jpg *.jpeg *.png *.bmp *.webp"),
-                ("Todos los archivos", "*.*")
-            ]
-        )
-        root.destroy()
-
-        if ruta_imagen:
-            nombre_archivo = ruta_imagen.split("/")[-1].split("\\")[-1]
+    def on_file_picked(e: ft.FilePickerResultEvent):
+        if e.files:
+            archivo = e.files[0]
+            nombre_archivo = archivo.name
             texto_archivo.value = f"Imagen cargada: {nombre_archivo}"
             texto_archivo.color = ft.Colors.GREEN_700
             mensaje_alerta.controls.clear()
@@ -628,7 +619,7 @@ def main(page: ft.Page):
                         ft.Row([tabla_productos], scroll=ft.ScrollMode.AUTO),
                         mensaje_alerta,
                         ft.Divider(),
-                        ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=10)
+                        ft.Row([btn_guard_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=10)
                     ]),
                     border=ft.Border.all(1, ft.Colors.BLUE_200),
                     bgcolor=ft.Colors.BLUE_50,
@@ -639,10 +630,12 @@ def main(page: ft.Page):
 
             page.update()
 
+    file_picker.on_result = on_file_picked
+
     btn_cargar_imagen = ft.Button(
         "Buscar e ingresar ticket",
         icon=ft.Icons.ADD_A_PHOTO,
-        on_click=abrir_explorador_archivos
+        on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
     )
 
     seccion_carrusel_inicio = ft.Card(
