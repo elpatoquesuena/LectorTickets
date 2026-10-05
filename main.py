@@ -187,7 +187,7 @@ def obtener_tabla_historial_completo(filtro_comercio=None):
     conn.close()
     return filas
 
-# --- 3. PROCESAMIENTO DE TICKET (OCR SIMULADO CON ARCHIVO REAL) ---
+# --- 3. PROCESAMIENTO DE TICKET (OCR SIMULADO) ---
 def simular_procesamiento_ocr(nombre_archivo):
     fecha_ticket = datetime.now().strftime("%Y-%m-%d %H:%M")
     datos_ticket = {
@@ -223,18 +223,18 @@ def simular_procesamiento_ocr(nombre_archivo):
     }
     return datos_ticket
 
-# --- 4. INTERFAZ GRÁFICA ADAPTADA A MÓVIL ---
+# --- 4. INTERFAZ GRÁFICA OPTIMIZADA PARA MÓVIL ---
 def main(page: ft.Page):
     page.title = "Control de Tickets"
     page.theme_mode = ft.ThemeMode.LIGHT
-    page.padding = 15
+    page.padding = 10
     page.scroll = ft.ScrollMode.AUTO
 
     init_db()
 
     ticket_pendiente = {"datos": None}
 
-    texto_archivo = ft.Text("Ninguna imagen seleccionada", color=ft.Colors.GREY, size=13)
+    texto_archivo = ft.Text("Ninguna imagen seleccionada", color=ft.Colors.GREY, size=12)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
@@ -250,23 +250,23 @@ def main(page: ft.Page):
             
             filas_modal.append(
                 ft.DataRow(cells=[
-                    ft.DataCell(ft.Text(formatear_solo_fecha(fecha_str), size=12)),
-                    ft.DataCell(ft.Text(comercio, size=12)),
-                    ft.DataCell(ft.Text(formatear_moneda(p_bruto))),
-                    ft.DataCell(ft.Text(formatear_cantidad(cant))),
-                    ft.DataCell(ft.Text(desc_txt, color=desc_col)),
-                    ft.DataCell(ft.Text(formatear_moneda(p_neto), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700)),
+                    ft.DataCell(ft.Text(formatear_solo_fecha(fecha_str), size=11)),
+                    ft.DataCell(ft.Text(comercio, size=11)),
+                    ft.DataCell(ft.Text(formatear_moneda(p_bruto), size=11)),
+                    ft.DataCell(ft.Text(formatear_cantidad(cant), size=11)),
+                    ft.DataCell(ft.Text(desc_txt, color=desc_col, size=11)),
+                    ft.DataCell(ft.Text(formatear_moneda(p_neto), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=11)),
                 ])
             )
 
         tabla_modal = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("Fecha")),
-                ft.DataColumn(ft.Text("Comercio")),
-                ft.DataColumn(ft.Text("P. Bruto")),
-                ft.DataColumn(ft.Text("Cant.")),
-                ft.DataColumn(ft.Text("Descuento")),
-                ft.DataColumn(ft.Text("P. Neto")),
+                ft.DataColumn(ft.Text("Fecha", size=11)),
+                ft.DataColumn(ft.Text("Comercio", size=11)),
+                ft.DataColumn(ft.Text("P. Bruto", size=11)),
+                ft.DataColumn(ft.Text("Cant.", size=11)),
+                ft.DataColumn(ft.Text("Descuento", size=11)),
+                ft.DataColumn(ft.Text("P. Neto", size=11)),
             ],
             rows=filas_modal
         )
@@ -276,11 +276,11 @@ def main(page: ft.Page):
             page.update()
 
         dialogo = ft.AlertDialog(
-            title=ft.Text(f"Historial: {nombre_producto}", weight=ft.FontWeight.BOLD, size=15),
+            title=ft.Text(f"Historial: {nombre_producto}", weight=ft.FontWeight.BOLD, size=14),
             content=ft.Container(
                 content=ft.Row([tabla_modal], scroll=ft.ScrollMode.AUTO),
-                width=page.width * 0.85,
-                height=280
+                width=300,
+                height=250
             ),
             actions=[ft.TextButton("Cerrar", on_click=cerrar_dialogo)]
         )
@@ -289,11 +289,13 @@ def main(page: ft.Page):
         dialogo.open = True
         page.update()
 
-    # BUSCADOR ADAPTADO A PANTALLA MÓVIL (Ancho flexible)
+    # BUSCADOR CON ANCHO SEGURO (Sin desbordamientos)
     input_busqueda_prod = ft.TextField(
         label="Buscar producto (ej: cafe, leche...)",
         prefix_icon=ft.Icons.SEARCH,
-        expand=True
+        width=230,
+        height=50,
+        text_size=13
     )
 
     card_resultado = ft.Column()
@@ -318,26 +320,27 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Column([
                         ft.ListTile(
-                            leading=ft.Icon(ft.Icons.SHOPPING_BAG, color=ft.Colors.GREEN_600, size=26),
-                            title=ft.Text(f"{nombre}", weight=ft.FontWeight.BOLD, size=16),
+                            leading=ft.Icon(ft.Icons.SHOPPING_BAG, color=ft.Colors.GREEN_600, size=24),
+                            title=ft.Text(f"{nombre}", weight=ft.FontWeight.BOLD, size=14),
                             subtitle=ft.Text(
                                 f"Lugar: {comercio} | Fecha: {formatear_solo_fecha(fecha)}\n"
-                                f"Bruto: {formatear_moneda(p_bruto_val)} | Desc: -{formatear_moneda(desc_val)}"
+                                f"Bruto: {formatear_moneda(p_bruto_val)} | Desc: -{formatear_moneda(desc_val)}",
+                                size=11
                             ),
-                            trailing=ft.Text(formatear_moneda(p_neto_val), weight=ft.FontWeight.BOLD, size=15, color=ft.Colors.GREEN_700),
+                            trailing=ft.Text(formatear_moneda(p_neto_val), weight=ft.FontWeight.BOLD, size=13, color=ft.Colors.GREEN_700),
                             on_click=lambda _, n=nombre: abrir_historial_producto_modal(n)
                         )
                     ]),
                     border=ft.Border.all(1, ft.Colors.GREEN_300),
                     bgcolor=ft.Colors.GREEN_50,
-                    border_radius=10,
+                    border_radius=8,
                     padding=5
                 )
             )
         else:
             card_resultado.controls.append(
                 ft.Container(
-                    content=ft.Text("No se encontró ningún producto con ese nombre.", color=ft.Colors.RED_600, italic=True, size=13),
+                    content=ft.Text("No se encontró ningún producto.", color=ft.Colors.RED_600, italic=True, size=12),
                     padding=5
                 )
             )
@@ -345,22 +348,24 @@ def main(page: ft.Page):
 
     btn_buscar = ft.IconButton(
         icon=ft.Icons.SEARCH,
+        icon_color=ft.Colors.BLUE_700,
         on_click=realizar_busqueda
     )
 
     input_busqueda_prod.on_submit = realizar_busqueda
 
     seccion_buscador = ft.Column([
-        ft.Divider(height=15),
-        ft.Text("2. Consultar Último Precio", size=16, weight=ft.FontWeight.BOLD),
-        ft.Row([input_busqueda_prod, btn_buscar], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+        ft.Divider(height=10),
+        ft.Text("2. Consultar Último Precio", size=15, weight=ft.FontWeight.BOLD),
+        ft.Row([input_busqueda_prod, btn_buscar], alignment=ft.MainAxisAlignment.START, spacing=5),
         card_resultado
     ], visible=True)
 
     # SECCIÓN HISTORIAL COMPLETO
     dropdown_comercios = ft.Dropdown(
         label="Filtrar por comercio",
-        expand=True
+        width=250,
+        text_size=13
     )
 
     def cargar_vista_historial(e=None):
@@ -371,7 +376,7 @@ def main(page: ft.Page):
         
         if not registros:
             contenedor_historial.controls.append(
-                ft.Text("No hay productos registrados.", color=ft.Colors.GREY_700, italic=True, size=13)
+                ft.Text("No hay productos registrados.", color=ft.Colors.GREY_700, italic=True, size=12)
             )
         else:
             filas_tabla = []
@@ -393,13 +398,13 @@ def main(page: ft.Page):
                 filas_tabla.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(formatear_solo_fecha(fecha), size=11)),
-                            ft.DataCell(ft.Text(comercio, size=11)),
-                            ft.DataCell(ft.Text(nombre, weight=ft.FontWeight.BOLD, size=11)),
-                            ft.DataCell(ft.Text(formatear_moneda(p_bruto), size=11)),
-                            ft.DataCell(ft.Text(formatear_cantidad(cant), size=11)),
-                            ft.DataCell(ft.Text(desc_txt, color=desc_col, size=11)),
-                            ft.DataCell(ft.Text(formatear_moneda(p_neto), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=11)),
+                            ft.DataCell(ft.Text(formatear_solo_fecha(fecha), size=10)),
+                            ft.DataCell(ft.Text(comercio, size=10)),
+                            ft.DataCell(ft.Text(nombre, weight=ft.FontWeight.BOLD, size=10)),
+                            ft.DataCell(ft.Text(formatear_moneda(p_bruto), size=10)),
+                            ft.DataCell(ft.Text(formatear_cantidad(cant), size=10)),
+                            ft.DataCell(ft.Text(desc_txt, color=desc_col, size=10)),
+                            ft.DataCell(ft.Text(formatear_moneda(p_neto), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=10)),
                             ft.DataCell(btn_accion_historial)
                         ]
                     )
@@ -407,14 +412,14 @@ def main(page: ft.Page):
 
             tabla_historial = ft.DataTable(
                 columns=[
-                    ft.DataColumn(ft.Text("Fecha", size=11)),
-                    ft.DataColumn(ft.Text("Comercio", size=11)),
-                    ft.DataColumn(ft.Text("Producto", size=11)),
-                    ft.DataColumn(ft.Text("P. Bruto", size=11)),
-                    ft.DataColumn(ft.Text("Cant.", size=11)),
-                    ft.DataColumn(ft.Text("Descuento", size=11)),
-                    ft.DataColumn(ft.Text("P. Neto", size=11)),
-                    ft.DataColumn(ft.Text("Hist.", size=11)),
+                    ft.DataColumn(ft.Text("Fecha", size=10)),
+                    ft.DataColumn(ft.Text("Comercio", size=10)),
+                    ft.DataColumn(ft.Text("Producto", size=10)),
+                    ft.DataColumn(ft.Text("P. Bruto", size=10)),
+                    ft.DataColumn(ft.Text("Cant.", size=10)),
+                    ft.DataColumn(ft.Text("Descuento", size=10)),
+                    ft.DataColumn(ft.Text("P. Neto", size=10)),
+                    ft.DataColumn(ft.Text("Hist.", size=10)),
                 ],
                 rows=filas_tabla,
             )
@@ -435,10 +440,10 @@ def main(page: ft.Page):
         page.update()
 
     seccion_historial_panel = ft.Column([
-        ft.Divider(height=15),
+        ft.Divider(height=10),
         ft.Row([
-            ft.Text("Historial Completo", size=16, weight=ft.FontWeight.BOLD),
-            ft.Button("Volver", icon=ft.Icons.ARROW_BACK, on_click=ocultar_historial)
+            ft.Text("Historial Completo", size=15, weight=ft.FontWeight.BOLD),
+            ft.TextButton("Volver", icon=ft.Icons.ARROW_BACK, on_click=ocultar_historial)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         dropdown_comercios,
         contenedor_historial
@@ -456,15 +461,15 @@ def main(page: ft.Page):
         seccion_historial_panel.visible = True
         cargar_vista_historial()
 
-    btn_ver_historial = ft.Button(
+    btn_ver_historial = ft.ElevatedButton(
         "Ver historial de compras",
         icon=ft.Icons.HISTORY,
         on_click=mostrar_historial
     )
 
     seccion_historial_inicio = ft.Column([
-        ft.Divider(height=15),
-        ft.Text("3. Historial de Compras", size=16, weight=ft.FontWeight.BOLD),
+        ft.Divider(height=10),
+        ft.Text("3. Historial de Compras", size=15, weight=ft.FontWeight.BOLD),
         btn_ver_historial
     ], visible=True)
 
@@ -497,18 +502,18 @@ def main(page: ft.Page):
             mensaje_alerta.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_700, size=22),
+                        ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_700, size=20),
                         ft.Text(
                             "¡Atención! Este ticket ya está registrado.",
                             color=ft.Colors.RED_800,
                             weight=ft.FontWeight.BOLD,
-                            size=12
+                            size=11
                         )
                     ]),
                     bgcolor=ft.Colors.RED_100,
                     border=ft.Border.all(1, ft.Colors.RED_400),
                     border_radius=8,
-                    padding=8
+                    padding=6
                 )
             )
             page.update()
@@ -554,33 +559,33 @@ def main(page: ft.Page):
                 filas_tabla.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(p["nombre"], weight=ft.FontWeight.BOLD, size=12)),
-                            ft.DataCell(ft.Text(formatear_moneda(p['precio_bruto']), size=12)),
-                            ft.DataCell(ft.Text(formatear_cantidad(p['cantidad']), size=12)),
-                            ft.DataCell(ft.Text(desc_texto, color=desc_col, size=12)),
-                            ft.DataCell(ft.Text(formatear_moneda(p['precio_neto']), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=12)),
+                            ft.DataCell(ft.Text(p["nombre"], weight=ft.FontWeight.BOLD, size=11)),
+                            ft.DataCell(ft.Text(formatear_moneda(p['precio_bruto']), size=11)),
+                            ft.DataCell(ft.Text(formatear_cantidad(p['cantidad']), size=11)),
+                            ft.DataCell(ft.Text(desc_texto, color=desc_col, size=11)),
+                            ft.DataCell(ft.Text(formatear_moneda(p['precio_neto']), weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700, size=11)),
                         ]
                     )
                 )
 
             tabla_productos = ft.DataTable(
                 columns=[
-                    ft.DataColumn(ft.Text("Producto", size=12)),
-                    ft.DataColumn(ft.Text("P. Bruto", size=12)),
-                    ft.DataColumn(ft.Text("Cant.", size=12)),
-                    ft.DataColumn(ft.Text("Descuento", size=12)),
-                    ft.DataColumn(ft.Text("P. Neto", size=12)),
+                    ft.DataColumn(ft.Text("Producto", size=11)),
+                    ft.DataColumn(ft.Text("P. Bruto", size=11)),
+                    ft.DataColumn(ft.Text("Cant.", size=11)),
+                    ft.DataColumn(ft.Text("Descuento", size=11)),
+                    ft.DataColumn(ft.Text("P. Neto", size=11)),
                 ],
                 rows=filas_tabla,
             )
 
-            btn_guardar_bd = ft.Button(
+            btn_guardar_bd = ft.ElevatedButton(
                 "Guardar",
                 icon=ft.Icons.SAVE,
                 style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE),
                 on_click=confirmar_guardado
             )
-            btn_cancelar_bd = ft.Button(
+            btn_cancelar_bd = ft.ElevatedButton(
                 "Cancelar",
                 icon=ft.Icons.CANCEL,
                 style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE),
@@ -592,26 +597,26 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Column([
                         ft.Row([
-                            ft.Icon(ft.Icons.RECEIPT_LONG, color=ft.Colors.BLUE_700, size=24),
-                            ft.Text("Vista Previa del Ticket", size=16, weight=ft.FontWeight.BOLD)
+                            ft.Icon(ft.Icons.RECEIPT_LONG, color=ft.Colors.BLUE_700, size=22),
+                            ft.Text("Vista Previa del Ticket", size=15, weight=ft.FontWeight.BOLD)
                         ]),
                         ft.Divider(),
                         ft.Row([
-                            ft.Text(f"Comercio: {datos['comercio']}", weight=ft.FontWeight.BOLD, size=13),
-                            ft.Text(f"Fecha: {formatear_solo_fecha(datos['fecha'])}", color=ft.Colors.GREY_700, size=12),
+                            ft.Text(f"Comercio: {datos['comercio']}", weight=ft.FontWeight.BOLD, size=12),
+                            ft.Text(f"Fecha: {formatear_solo_fecha(datos['fecha'])}", color=ft.Colors.GREY_700, size=11),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Text(f"Total: {formatear_moneda(datos['total'])}", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
+                        ft.Text(f"Total: {formatear_moneda(datos['total'])}", size=15, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
                         ft.Divider(),
-                        ft.Text("Detalle:", weight=ft.FontWeight.BOLD, size=13),
+                        ft.Text("Detalle:", weight=ft.FontWeight.BOLD, size=12),
                         ft.Row([tabla_productos], scroll=ft.ScrollMode.AUTO),
                         mensaje_alerta,
                         ft.Divider(),
-                        ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=10)
+                        ft.Row([btn_guardar_bd, btn_cancelar_bd], alignment=ft.MainAxisAlignment.END, spacing=5)
                     ]),
                     border=ft.Border.all(1, ft.Colors.BLUE_200),
                     bgcolor=ft.Colors.BLUE_50,
-                    border_radius=10,
-                    padding=10
+                    border_radius=8,
+                    padding=8
                 )
             )
 
@@ -620,7 +625,7 @@ def main(page: ft.Page):
     file_picker = ft.FilePicker(on_result=on_file_picked)
     page.overlay.append(file_picker)
 
-    btn_cargar_imagen = ft.Button(
+    btn_cargar_imagen = ft.ElevatedButton(
         "Seleccionar ticket de la galería",
         icon=ft.Icons.PHOTO_LIBRARY,
         on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
@@ -629,17 +634,17 @@ def main(page: ft.Page):
     seccion_carrusel_inicio = ft.Card(
         content=ft.Container(
             content=ft.Column([
-                ft.Text("1. Escanear / Cargar Ticket", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text("1. Escanear / Cargar Ticket", size=15, weight=ft.FontWeight.BOLD),
                 btn_cargar_imagen,
                 texto_archivo,
                 contenedor_resumen
             ]),
-            padding=12
+            padding=10
         )
     )
 
     page.add(
-        ft.Text("Digitalizador de Tickets", size=20, weight=ft.FontWeight.BOLD),
+        ft.Text("Digitalizador de Tickets", size=18, weight=ft.FontWeight.BOLD),
         seccion_carrusel_inicio,
         seccion_buscador,
         seccion_historial_inicio,
