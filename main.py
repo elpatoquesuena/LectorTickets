@@ -289,7 +289,7 @@ def main(page: ft.Page):
         dialogo.open = True
         page.update()
 
-    # BUSCADOR CON ANCHO SEGURO (Sin desbordamientos)
+    # BUSCADOR CON ANCHO SEGURO
     input_busqueda_prod = ft.TextField(
         label="Buscar producto (ej: cafe, leche...)",
         prefix_icon=ft.Icons.SEARCH,
@@ -461,7 +461,7 @@ def main(page: ft.Page):
         seccion_historial_panel.visible = True
         cargar_vista_historial()
 
-    btn_ver_historial = ft.ElevatedButton(
+    btn_ver_historial = ft.Button(
         "Ver historial de compras",
         icon=ft.Icons.HISTORY,
         on_click=mostrar_historial
@@ -579,16 +579,14 @@ def main(page: ft.Page):
                 rows=filas_tabla,
             )
 
-            btn_guardar_bd = ft.ElevatedButton(
+            btn_guardar_bd = ft.Button(
                 "Guardar",
                 icon=ft.Icons.SAVE,
-                style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE),
                 on_click=confirmar_guardado
             )
-            btn_cancelar_bd = ft.ElevatedButton(
+            btn_cancelar_bd = ft.Button(
                 "Cancelar",
                 icon=ft.Icons.CANCEL,
-                style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE),
                 on_click=cancelar_registro
             )
 
@@ -625,7 +623,7 @@ def main(page: ft.Page):
     file_picker = ft.FilePicker(on_result=on_file_picked)
     page.overlay.append(file_picker)
 
-    btn_cargar_imagen = ft.ElevatedButton(
+    btn_cargar_imagen = ft.Button(
         "Seleccionar ticket de la galería",
         icon=ft.Icons.PHOTO_LIBRARY,
         on_click=lambda _: file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
