@@ -27,18 +27,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar Flutter Oficialmente y Limpio
+      - name: Configurar Flutter Estable (Compatible con Flet)
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
           channel: 'stable'
           cache: false
 
-      - name: Aceptar licencias de Android automáticamente
+      - name: Aceptar licencias de Android
         run: |
           yes | flutter doctor --android-licenses || true
 
-      - name: Compilar APK con Flet
+      - name: Limpiar compilaciones anteriores
+        run: flet clean || true
+
+      - name: Compilar APK en modo release
         run: flet build apk --yes .
 
       - name: Subir APK como artefacto
