@@ -27,6 +27,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Aceptar licencias de Android SDK automáticamente
+        run: |
+          yes | sdkmanager --licenses || true
+
       - name: Compilar APK con Flet
         run: flet build apk --yes .
 
