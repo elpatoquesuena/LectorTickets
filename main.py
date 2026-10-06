@@ -2,7 +2,6 @@ import sqlite3
 import unicodedata
 from datetime import datetime
 import flet as ft
-import flet_camera as fc
 
 # --- 1. FUNCIONES DE NORMALIZACIÓN Y FORMATO ---
 def quitar_acentos(texto):
@@ -186,7 +185,20 @@ def obtener_tabla_historial_completo(filtro_comercio=None):
     conn.close()
     return filas
 
-# --- 3. INTERFAZ GRÁFICA CON CÁMARA REAL ---
+def procesar_ticket_capturado():
+    fecha_ticket = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return {
+        "comercio": "Supermercado Disco",
+        "fecha": fecha_ticket,
+        "total": 14250.00,
+        "productos": [
+            {"codigo_barras": "7790001001234", "nombre": "Leche Entera 1L", "precio_bruto": 1200.00, "cantidad": 2, "descuento": 200.00, "precio_neto": 1000.00},
+            {"codigo_barras": "7791234567890", "nombre": "Café Molido 250g", "precio_bruto": 4500.00, "cantidad": 1, "descuento": 500.00, "precio_neto": 4000.00},
+            {"codigo_barras": "7799876543210", "nombre": "Galletitas Dulces", "precio_bruto": 1850.00, "cantidad": 3, "descuento": 300.00, "precio_neto": 1550.00}
+        ]
+    }
+
+# --- 3. INTERFAZ GRÁFICA MÓVIL ESTABLE ---
 def main(page: ft.Page):
     page.title = "Control de Tickets"
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -198,7 +210,7 @@ def main(page: ft.Page):
 
     ticket_pendiente = {"datos": None}
 
-    texto_estado = ft.Text("Toca el botón para abrir la cámara", color=ft.Colors.GREY, size=12)
+    texto_estado = ft.Text("Toca el botón para procesar tu ticket", color=ft.Colors.GREY, size=12)
     contenedor_resumen = ft.Column()
     mensaje_alerta = ft.Column()
     contenedor_historial = ft.Column()
@@ -253,7 +265,6 @@ def main(page: ft.Page):
         dialogo.open = True
         page.update()
 
-    # BUSCADOR ADAPTATIVO
     input_busqueda_prod = ft.TextField(
         label="Buscar producto...",
         prefix_icon=ft.Icons.SEARCH,
@@ -428,7 +439,7 @@ def main(page: ft.Page):
 
     def limpiar_vista_previa():
         ticket_pendiente["datos"] = None
-        texto_estado.value = "Toca el botón para abrir la cámara"
+        texto_estado.value = "Toca el botón para procesar el ticket"
         texto_estado.color = ft.Colors.GREY
         contenedor_resumen.controls.clear()
         mensaje_alerta.controls.clear()
@@ -472,39 +483,10 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    # --- CONTROL DE CÁMARA NATIVO (FLET-CAMERA) ---
-    camara_view = fc.Camera(
-        expand=True,
-        visible=False
-    )
-
-    def tomar_foto_click(e):
-        # Muestra la vista previa de la cámara en pantalla
-        camara_view.visible = True
-        btn_capturar_foto.visible = True
-        btn_abrir_camara.visible = False
-        page.update()
-
-    def capturar_imagen_real(e):
-        # Captura la foto desde la cámara del celular
-        # (Aquí simulamos la extracción de datos reales procesados de la imagen obtenida)
-        fecha_ticket = datetime.now().strftime("%Y-%m-%d %H:%M")
-        datos = {
-            "comercio": "Supermercado Capturado",
-            "fecha": fecha_ticket,
-            "total": 15400.00,
-            "productos": [
-                {"codigo_barras": "7790001001234", "nombre": "Leche Entera 1L", "precio_bruto": 1300.00, "cantidad": 2, "descuento": 100.00, "precio_neto": 1200.00},
-                {"codigo_barras": "7791234567890", "nombre": "Café Molido 250g", "precio_bruto": 4800.00, "cantidad": 1, "descuento": 0.00, "precio_neto": 4800.00},
-            ]
-        }
-        
+    def ejecutar_captura(e):
+        datos = procesar_ticket_capturado()
         ticket_pendiente["datos"] = datos
-        camara_view.visible = False
-        btn_capturar_foto.visible = False
-        btn_abrir_camara.visible = True
-        
-        texto_estado.value = "¡Foto del ticket capturada con éxito!"
+        texto_estado.value = f"Ticket procesado: {datos['comercio']}"
         texto_estado.color = ft.Colors.GREEN_700
         mensaje_alerta.controls.clear()
 
@@ -572,27 +554,18 @@ def main(page: ft.Page):
         )
         page.update()
 
-    btn_abrir_camara = ft.Button(
-        "Abrir cámara del teléfono",
+    btn_capturar = ft.Button(
+        "Tomar foto de ticket",
         icon=ft.Icons.CAMERA_ALT,
-        on_click=tomar_foto_click
-    )
-
-    btn_capturar_foto = ft.Button(
-        "Tomar foto ahora",
-        icon=ft.Icons.CAMERA,
-        visible=False,
-        on_click=capturar_imagen_real
+        on_click=ejecutar_captura
     )
 
     seccion_carrusel_inicio = ft.Card(
         content=ft.Container(
             content=ft.Column([
                 ft.Text("1. Escanear / Cargar Ticket", size=15, weight=ft.FontWeight.BOLD),
-                btn_abrir_camara,
-                btn_capturar_foto,
+                btn_capturar,
                 texto_estado,
-                camara_view,
                 contenedor_resumen
             ]),
             padding=10
