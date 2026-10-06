@@ -439,7 +439,7 @@ def main(page: ft.Page):
 
     def limpiar_vista_previa():
         ticket_pendiente["datos"] = None
-        texto_estado.value = "Toca el botón para procesar el ticket"
+        texto_estado.value = "Toca el botón para procesar tu ticket"
         texto_estado.color = ft.Colors.GREY
         contenedor_resumen.controls.clear()
         mensaje_alerta.controls.clear()
@@ -555,7 +555,7 @@ def main(page: ft.Page):
         page.update()
 
     btn_capturar = ft.Button(
-        "Tomar foto de ticket",
+        "Tomar foto del ticket",
         icon=ft.Icons.CAMERA_ALT,
         on_click=ejecutar_captura
     )
