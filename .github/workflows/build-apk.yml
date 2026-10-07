@@ -27,22 +27,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configurar Flutter Oficial
+      - name: Instalar Flutter SDK
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
           channel: 'stable'
-          cache: true
+          cache: false
+
+      - name: Verificar Flutter y Rutas
+        run: |
+          flutter --version
+          flutter doctor
 
       - name: Aceptar licencias de Android
         run: |
           yes | flutter doctor --android-licenses || true
 
-      - name: Compilar APK con Flet (Usando Flutter del Sistema)
-        env:
-          FLUTTER_ROOT: ${{ steps.flutter_action.outputs.FLUTTER_ROOT }}
-        run: |
-          flet build apk --yes .
+      - name: Compilar APK con Flet
+        run: flet build apk --yes .
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
