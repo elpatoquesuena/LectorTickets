@@ -1,0 +1,35 @@
+[project]
+name = "lector-tickets"
+version = "0.3.0"
+description = "Lector y gestor de tickets con OCR local para Android"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "flet>=0.86.0,<0.87.0",
+    "flet-camera>=0.1.0",
+]
+
+[tool.flet]
+product = "LectorTickets"
+org = "com.lector.tickets"
+permissions = ["camera"]
+
+[tool.flet.app]
+path = "src"
+module = "main"
+
+[tool.flet.android]
+dependencies = ["pyjnius"]
+min_sdk_version = 24
+target_sdk_version = 35
+
+[tool.flet.android.permission]
+"android.permission.CAMERA" = true
+
+[tool.flet.android.feature]
+"android.hardware.camera" = false
+
+[tool.flet.android.meta_data]
+"com.google.mlkit.vision.DEPENDENCIES" = "ocr"
+
+[tool.flet.flutter.pubspec.dependencies]
+google_mlkit_text_recognition = "^0.17.1"
