@@ -17,17 +17,18 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@v6
 
-      - name: Compilar APK
-        id: build
-        uses: flet-dev/flet-build-action@v1
-        with:
-          target: apk
-          build-number: ${{ github.run_number }}
+      - name: Preparar uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Publicar APK como artefacto
+      - name: Verificar Flet
+        run: uv run flet --version --json
+
+      - name: Compilar APK
+        run: uv run flet build apk --yes --verbose --build-number ${{ github.run_number }}
+
+      - name: Publicar APK
         uses: actions/upload-artifact@v7
         with:
           name: LectorTickets-APK
-          path: ${{ steps.build.outputs.archive-path }}
-          archive: false
+          path: build/apk/
           if-no-files-found: error
