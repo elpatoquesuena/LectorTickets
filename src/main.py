@@ -467,6 +467,7 @@ def main(page: ft.Page):
         except Exception as ex:
             show_error(f"No se pudo abrir la cámara: {ex}")
 
+
     async def pick_image(e):
         try:
             result = await picker.pick_files(
@@ -475,33 +476,38 @@ def main(page: ft.Page):
                 with_data=True,
             )
 
-            if not result or not result.files:
-                # El usuario canceló el selector.
+            if not result:
                 return
 
-            selected_file = result.files[0]
-
-            # En Android priorizamos los bytes, porque la ruta local
-            # puede no estar disponible para la aplicación.
-            if selected_file.bytes:
-                data = selected_file.bytes
-
-            elif selected_file.path:
-                data = await asyncio.to_thread(
-                    Path(selected_file.path).read_bytes
-                )
-
+            # Algunas versiones devuelven directamente una lista de archivos.
+            if isinstance(result, list):
+                if not result:
+                    return
+                selected_file = result[0]
             else:
-                show_error(
-                    "El selector no devolvió datos de la imagen. "
-                    "Probá elegir otra foto."
-                )
+                files = getattr(result, "files", None)
+                if not files:
+                    return
+                selected_file = files[0]
+
+            data = getattr(selected_file, "bytes", None)
+
+            if not data:
+                path = getattr(selected_file, "path", None)
+                if path:
+                    data = await asyncio.to_thread(
+                        Path(path).read_bytes
+                    )
+
+            if not data:
+                show_error("No se pudo leer el archivo seleccionado.")
                 return
 
             await process_photo(data, selected_file.name)
 
         except Exception as ex:
             show_error(f"No se pudo cargar la imagen: {ex}")
+
 
     async def search(e):
         search_results.controls.clear()
