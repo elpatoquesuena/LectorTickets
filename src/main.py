@@ -388,18 +388,6 @@ def main(page: ft.Page):
             return
 
         try:
-            cameras = await camera.get_available_cameras()
-
-            if not cameras:
-                show_error("No se encontró ninguna cámara disponible.")
-                return
-
-            await camera.initialize(
-                description=cameras[0],
-                resolution_preset=fc.ResolutionPreset.MEDIUM,
-                enable_audio=False,
-                image_format_group=fc.ImageFormatGroup.JPEG,
-            )
 
             dialog = ft.AlertDialog(
                 modal=True,
@@ -463,6 +451,24 @@ def main(page: ft.Page):
             page.dialog = dialog
             dialog.open = True
             page.update()
+            
+            cameras = await camera.get_available_cameras()
+
+            if not cameras:
+                dialog.open = False
+                page.update()
+                show_error("No se encontró ninguna cámara disponible.")
+                return
+
+            await camera.initialize(
+                description=cameras[0],
+                resolution_preset=fc.ResolutionPreset.MEDIUM,
+                enable_audio=False,
+                image_format_group=fc.ImageFormatGroup.JPEG,
+            )
+
+            page.update()
+
 
         except Exception as ex:
             show_error(f"No se pudo abrir la cámara: {ex}")
