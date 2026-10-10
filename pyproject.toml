@@ -21,6 +21,12 @@ module = "main"
 dependencies = ["pyjnius"]
 min_sdk_version = 24
 target_sdk_version = 35
+proguard_rules = [
+  "-dontwarn com.google.mlkit.vision.text.chinese.**",
+  "-dontwarn com.google.mlkit.vision.text.devanagari.**",
+  "-dontwarn com.google.mlkit.vision.text.japanese.**",
+  "-dontwarn com.google.mlkit.vision.text.korean.**",
+]
 
 [tool.flet.android.permission]
 "android.permission.CAMERA" = true
