@@ -33,3 +33,6 @@ target_sdk_version = 35
 
 [tool.flet.flutter.pubspec.dependencies]
 google_mlkit_text_recognition = "^0.17.1"
+
+[tool.flet.flutter.pubspec.dependency_overrides]
+jni = "1.1.0"
